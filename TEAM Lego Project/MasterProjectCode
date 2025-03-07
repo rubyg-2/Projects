@@ -1,0 +1,219 @@
+% Implementation of Remote Control
+
+global key
+InitKeyboard();
+  
+ultraSP = 1;
+touchSP = 2;
+colorSP = 3;
+
+leftMP = 'A';
+rightMP = 'B';
+clawMP = 'C';
+
+colorMode = 2;
+driveMode = 0; % set value to 1 for manual mode, 0 for automatic
+
+leftDriveSpeed = 52;
+rightDriveSpeed = 50;
+
+manualDriveSpeed = 25;
+clawSpeed = 5;
+
+leftTurn = 0;
+leftTick = 12;
+greenTick = 0;
+
+
+brick.SetColorMode(colorSP, colorMode);
+prevColor = brick.ColorCode(colorSP);
+
+
+disp("Program Started");
+
+while 1
+    switch driveMode
+        case 0
+            color = brick.ColorCode(colorSP);
+            
+            if (color == 2 && prevColor ~= 2) % Color is yellow
+                driveMode = 1;
+
+                pause(.25);
+                brick.StopAllMotors('Coast');
+
+                brick.beep();
+                pause(.25);
+                brick.beep();
+                pause(.25);
+
+
+            elseif (color == 4 && prevColor ~= 4) % Color is blue
+                driveMode = 1;
+
+                pause(.25);
+                brick.StopAllMotors('Coast');
+
+                brick.beep();
+                pause(.25);
+                brick.beep();
+                pause(.25);
+
+
+            elseif (color == 5 && prevColor ~= 5) % Color is red
+                disp('red');
+                disp('Stop for 1 seconds');
+                brick.StopAllMotors();
+                pause(1);
+
+                % is this needed?
+                disp('Continue');
+                %brick.MoveMotor(leftMP, leftDriveSpeed);
+                %brick.MoveMotor(rightMP, rightDriveSpeed);
+                %pause(0.5);
+                %brick.StopAllMotors();
+                
+            elseif (color == 3 && greenTick <= 5)
+                greenTick = greenTick + 1; % NEW: test (greenTick intended to prevent shadows from affecting code)
+                disp(greenTick);
+            elseif (color == 3 && pickedUp && droppedOff && greenTick > 5) % Color is green
+                driveMode = 2;
+            end
+
+            if (color ~= 3)
+                greenTick = 0;
+            end
+            
+            prevColor = color;
+
+            if brick.UltrasonicDist(ultraSP) <= 10
+                brick.StopAllMotors('Coast');
+                % reverse for .2 seconds
+                brick.MoveMotor(leftMP, -leftDriveSpeed);
+                brick.MoveMotor(rightMP, -rightDriveSpeed);
+                pause(0.2);
+                brick.StopAllMotors('Coast');
+
+                % turn right for .15 seconds
+                brick.MoveMotor(leftMP, leftDriveSpeed);
+                brick.MoveMotor(rightMP, -rightDriveSpeed);
+                pause(.15);
+                brick.StopAllMotors('Coast');
+            % Check for left open
+            elseif brick.UltrasonicDist(ultraSP) >= 50 && leftTick >= 11
+                leftTurn = 1;
+                leftTick = 0;                                                                           
+            end
+
+            % Stop and turn right if obstacles ahead (Right must be closed)
+            if brick.TouchPressed(touchSP)
+
+                % reverse
+                brick.StopAllMotors('Coast');
+                brick.MoveMotor(leftMP, -leftDriveSpeed);
+                brick.MoveMotor(rightMP, -rightDriveSpeed);
+                pause(0.5);
+                brick.StopAllMotors('Coast');
+
+                % turn right
+                brick.MoveMotor(leftMP, leftDriveSpeed);
+                brick.MoveMotor(rightMP, -rightDriveSpeed);
+                pause(.9); % calibrate for right turn .9 in prev
+                brick.StopAllMotors('Coast');
+
+            end
+            if (leftTurn == 0)       
+                    % Drive Forward
+                    brick.MoveMotor(leftMP, leftDriveSpeed);
+                    brick.MoveMotor(rightMP, rightDriveSpeed);
+                    pause(.05);
+            else
+                    %Left Turn
+                    if (leftTick < 3 )%arbitrary timeframe for straight shot on turn
+                        brick.MoveMotor(leftMP, leftDriveSpeed);
+                        brick.MoveMotor(rightMP, rightDriveSpeed);
+                        
+                    elseif (leftTick < 5 )%arbitrary timeframe for turn
+                        % turn left
+                        brick.MoveMotor(leftMP, -leftDriveSpeed);
+                        brick.MoveMotor(rightMP, rightDriveSpeed);
+                        
+                    elseif (leftTick < 11 )%arbitrary timeframe for straight shot on turn - 11 prev
+                        brick.MoveMotor(leftMP, leftDriveSpeed);
+                        brick.MoveMotor(rightMP, rightDriveSpeed);
+                        
+                    else
+                        leftTurn = 0; 
+                        %turn process complete , go back to normal behavior
+                    end
+
+                    pause(.0918);
+                    leftTick = leftTick + 1;
+
+            end
+                    
+        % Manual Switch
+        case 1
+            
+            disp("Switched to Manual");
+            
+            while 1
+                pause(0.1);
+
+                switch key
+                    case 'w'
+                        % forward
+                        brick.MoveMotor(leftMP, manualDriveSpeed);
+                        brick.MoveMotor(rightMP, manualDriveSpeed);
+                        
+                    case 's'
+                        % backward
+                        brick.MoveMotor(leftMP, -manualDriveSpeed);
+                        brick.MoveMotor(rightMP, -manualDriveSpeed);
+    
+                    case 'd'
+                        % right
+                        brick.MoveMotor(leftMP, manualDriveSpeed);
+                        brick.MoveMotor(rightMP, -manualDriveSpeed);
+    
+                    case 'a'
+                        % left
+                        brick.MoveMotor(leftMP, -manualDriveSpeed);
+                        brick.MoveMotor(rightMP, manualDriveSpeed);
+
+                    case 'uparrow'
+                        % claw up
+                        brick.MoveMotor(clawMP, -clawSpeed);
+
+                    case 'downarrow'
+                        % claw down
+                        brick.MoveMotor(clawMP, clawSpeed);
+
+                    case 0
+                        % stop
+                        brick.StopAllMotors();
+    
+                    case 'q'
+                        break;
+                end
+            
+            end
+
+            driveMode = 0;
+            disp("Switched to Automatic");
+
+        case 2
+            % Stop Program
+            brick.StopAllMotors('Coast');
+            brick.beep();
+            pause(.25);
+            brick.beep();
+            pause(.25);
+            brick.beep();
+            pause(.25);
+            break;
+    end
+
+end
+
+disp('Program ended');
