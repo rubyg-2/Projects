@@ -3,4 +3,4 @@
 
 [TEAM Discussion post application](https://github.com/rubyg-2/Projects/tree/main/CSE%20360%20Discussion%20Post%20Team%20Project) *In progress Project More to come*
 
-[Women In Technology](https://github.com/rubyg-2/Women-In-Tech/blob/main/script.js#L34)
+[Women In Technology](https://github.com/rubyg-2/Women-In-Tech/tree/main)
